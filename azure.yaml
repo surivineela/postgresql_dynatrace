@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: octopets
+metadata:
+  template: octopets-dynatrace@0.0.1
+
+services:
+  backend:
+    project: ./backend
+    language: dotnet
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      context: ..
+  
+  frontend:
+    project: ./frontend
+    language: js
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      context: .
+
+hooks:
+  postprovision:
+    posix:
+      shell: sh
+      run: |
+        echo "Setting up database..."
+        azd env get-values > .env
+    windows:
+      shell: pwsh
+      run: |
+        Write-Host "Setting up database..."
+        azd env get-values | Out-File -FilePath .env -Encoding utf8

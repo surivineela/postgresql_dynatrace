@@ -196,36 +196,65 @@ When deploying to production:
 
 ## 🚀 Deployment to Azure
 
-This repository provides a **production-tested** deployment approach using Azure Container Apps with PostgreSQL.
+This repository provides **two deployment options** for Azure Container Apps with PostgreSQL and optional Dynatrace monitoring.
 
-### 📖 **Documentation Structure**
+### 🎯 **Quick Deploy with Azure Developer CLI (Recommended)**
 
-| Document | Purpose | 
-|----------|---------|
-| **[DEPLOYMENT_INSTRUCTIONS.md](./DEPLOYMENT_INSTRUCTIONS.md)** | Complete deployment guide with step-by-step instructions |
-| **[BREAKING_SCENARIOS_GUIDE.md](./BREAKING_SCENARIOS_GUIDE.md)** | PostgreSQL failure scenarios for SRE testing and training |
+**One command to deploy everything:**
 
-### 🎯 **Quick Deploy**
+```bash
+# Prerequisites: Install azd (https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
+azd auth login
+azd up
+```
+
+That's it! 🎉 The `azd up` command will provision all Azure resources, build Docker images, and deploy your application in ~10 minutes.
+
+📖 **[See AZD_DEPLOYMENT_GUIDE.md for complete azd documentation](./AZD_DEPLOYMENT_GUIDE.md)**
+
+### 🛠️ **Manual Deployment (Advanced)**
+
+For manual control or CI/CD pipelines:
+
 ```bash
 # 1. Prerequisites: Azure CLI, Docker, Git
 # 2. Clone repository
-git clone https://github.com/surivineela/octopets_postgresql.git
-cd octopets_postgresql
+git clone https://github.com/surivineela/postgresql_dynatrace.git
+cd postgresql_dynatrace
 
-# 3. Deploy (follow DEPLOYMENT_INSTRUCTIONS.md for complete guide)
-az group create --name "octopets-prod-rg" --location "eastus"
+# 3. Deploy infrastructure
+az group create --name "octopets-prod-rg" --location "swedencentral"
 az deployment group create --resource-group "octopets-prod-rg" \
-  --template-file infrastructure/main.bicep \
-  --parameters location="eastus" environment="prod" appName="octopets" \
-    dbAdminLogin="octopetsadmin" dbAdminPassword="YourSecurePassword123!"
+  --template-file infra/main.bicep \
+  --parameters location="swedencentral" environmentName="octopets-prod" \
+    dbAdminPassword="YourSecurePassword123!"
 ```
+
+📖 **[See DEPLOYMENT_GUIDE.md for complete manual deployment instructions](./DEPLOYMENT_GUIDE.md)**
+
+### 📖 **Documentation**
+
+| Document | Purpose | 
+|----------|---------|
+| **[AZD_DEPLOYMENT_GUIDE.md](./AZD_DEPLOYMENT_GUIDE.md)** | 🌟 **Recommended**: One-command deployment with azd |
+| **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** | Manual deployment for advanced scenarios |
+| **[MONITORING.md](./MONITORING.md)** | Dynatrace monitoring integration guide |
+| **[BREAKING_SCENARIOS_GUIDE.md](./BREAKING_SCENARIOS_GUIDE.md)** | PostgreSQL failure scenarios for SRE testing |
 
 ### 🏗️ **Architecture**
 - **Frontend**: React app in Azure Container Apps (Docker + nginx)
-- **Backend**: .NET Core API in Azure Container Apps  
-- **Database**: PostgreSQL Flexible Server with Entity Framework
-- **Infrastructure**: Azure Bicep templates for repeatable deployments
-- **Security**: Key Vault for secrets, proper firewall rules, SSL connections
+- **Backend**: .NET Core API in Azure Container Apps with OpenTelemetry
+- **Database**: PostgreSQL Flexible Server 15 with Entity Framework Core
+- **Infrastructure**: Azure Bicep templates with azd support
+- **Monitoring**: Optional Dynatrace integration (OpenTelemetry + RUM)
+- **Security**: Managed secrets, SSL connections, Azure firewall rules
+
+### 💰 **Estimated Cost**
+- Container Apps (2 apps): ~$30-50/month
+- PostgreSQL Burstable: ~$15-20/month
+- Container Registry: ~$5/month
+- Log Analytics: ~$5-15/month
+- **Total**: ~$55-90/month (pay-as-you-go)
 
 ## 💼 License
 
