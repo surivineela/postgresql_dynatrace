@@ -84,7 +84,10 @@ public static class Extensions
 
         if (useOtlpExporter)
         {
-            builder.Services.AddOpenTelemetry().UseOtlpExporter();
+            // Use signal-specific exporters instead of UseOtlpExporter to avoid conflicts
+            builder.Services.AddOpenTelemetry()
+                .WithMetrics(metrics => metrics.AddOtlpExporter())
+                .WithTracing(tracing => tracing.AddOtlpExporter());
         }
 
         // Uncomment the following lines to enable the Azure Monitor exporter (requires the Azure.Monitor.OpenTelemetry.AspNetCore package)
