@@ -137,11 +137,22 @@ app.MapGet("/health/ready", async (AppDbContext dbContext) =>
     try
     {
         var canConnect = await dbContext.Database.CanConnectAsync();
-        return Results.Ok(new { Status = "Ready", DatabaseConnected = canConnect, Timestamp = DateTime.UtcNow });
+        var response = new
+        {
+            Status = canConnect ? "Ready" : "Unavailable",
+            DatabaseConnected = canConnect,
+            Timestamp = DateTime.UtcNow
+        };
+
+        return canConnect
+            ? Results.Ok(response)
+            : Results.Json(response, statusCode: StatusCodes.Status503ServiceUnavailable);
     }
-    catch (Exception ex)
+    catch (Exception)
     {
-        return Results.Ok(new { Status = "Starting", DatabaseConnected = false, Error = ex.Message, Timestamp = DateTime.UtcNow });
+        return Results.Json(
+            new { Status = "Unavailable", DatabaseConnected = false, Timestamp = DateTime.UtcNow },
+            statusCode: StatusCodes.Status503ServiceUnavailable);
     }
 })
 .WithName("ReadinessCheck")
