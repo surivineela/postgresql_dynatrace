@@ -12,18 +12,20 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install
+RUN npm ci
 
 COPY . .
 
 RUN echo "Building with REACT_APP_USE_MOCK_DATA=${REACT_APP_USE_MOCK_DATA}"
 
-RUN chmod +x node_modules/.bin/* && npm run build
+RUN npm run build
 
 FROM nginx:alpine
 
 COPY --from=build /app/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/templates/default.conf.template
+
+ENV BACKEND_URL=https://octopets-prod-api.yellowmushroom-e7e19f03.swedencentral.azurecontainerapps.io
 
 EXPOSE 80
 
