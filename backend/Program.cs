@@ -7,9 +7,13 @@ using Octopets.Backend.Repositories;
 using Octopets.Backend.Repositories.Interfaces;
 
 using System.Text.Json.Serialization;
+using System.Diagnostics;
 
 // Configure services
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.AddJsonConsole();
+builder.Logging.AddFilter("Octopets.Backend.Requests", LogLevel.Information);
 
 // Add service defaults & Aspire client integrations
 builder.AddServiceDefaults();
@@ -82,6 +86,36 @@ var app = builder.Build();
 
 // Map default endpoints added by AddServiceDefaults
 app.MapDefaultEndpoints();
+
+var requestLogger = app.Services.GetRequiredService<ILoggerFactory>()
+    .CreateLogger("Octopets.Backend.Requests");
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/health")
+        || context.Request.Path.StartsWithSegments("/alive"))
+    {
+        await next(context);
+        return;
+    }
+
+    var startedAt = Stopwatch.GetTimestamp();
+    var statusCode = StatusCodes.Status500InternalServerError;
+    try
+    {
+        await next(context);
+        statusCode = context.Response.StatusCode;
+    }
+    finally
+    {
+        var route = (context.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText ?? "(unmatched)";
+        requestLogger.Log(
+            statusCode >= 500 ? LogLevel.Warning : LogLevel.Information,
+            "HTTP {Method} {Route} responded {StatusCode} in {DurationMs} ms. TraceId={TraceId}",
+            context.Request.Method, route, statusCode,
+            Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds,
+            Activity.Current?.TraceId.ToString() ?? context.TraceIdentifier);
+    }
+});
 
 // Configure the HTTP request pipeline
 // Only use HTTPS redirection in development - Container Apps handles HTTPS termination
